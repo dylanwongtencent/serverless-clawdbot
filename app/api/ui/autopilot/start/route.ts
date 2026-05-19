@@ -4,7 +4,7 @@ import { getUiCookie, verifyUiToken } from "@/app/lib/uiAuth";
 import { setAutopilotEnabled } from "@/app/lib/autopilotState";
 import { start } from "workflow/api";
 import { autopilotWorkflow } from "@/app/workflows/autopilot";
-
+import { world } from "@/app/lib/workflow-world";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -15,8 +15,7 @@ export async function POST(req: Request) {
   await setAutopilotEnabled(true);
 
   // fire-and-forget: autopilot loop runs durably
-  await start(autopilotWorkflow, []);
-
+await start(autopilotWorkflow, [], { world });
   const url = new URL(req.url);
   const baseUrl = env("APP_BASE_URL") ?? `${url.protocol}//${url.host}`;
   return NextResponse.redirect(`${baseUrl.replace(/\/$/, "")}/ui#autopilot`, 303);
