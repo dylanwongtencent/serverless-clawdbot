@@ -37,7 +37,43 @@ export const dynamic = "force-dynamic";
 function jsonOk(extra: any = {}) {
   return NextResponse.json({ ok: true, ...extra });
 }
+async function handleWorkflowCallback(req: Request) {
+  const raw = await req.text();
 
+  let payload: any;
+  try {
+    payload = JSON.parse(raw);
+  } catch {
+    return new Response("Bad workflow callback JSON", { status: 400 });
+  }
+
+  const queueName = String(payload?.queueName ?? "");
+
+  const targetPath = queueName.startsWith("__wkf_step_")
+    ? "/.well-known/workflow/v1/step"
+    : queueName.startsWith("__wkf_workflow_")
+      ? "/.well-known/workflow/v1/flow"
+      : null;
+
+  if (!targetPath) {
+    return NextResponse.json(
+      { ok: false, error: "Unknown workflow queueName", queueName },
+      { status: 400 }
+    );
+  }
+
+  const url = new URL(req.url);
+  const targetUrl = `${url.origin}${targetPath}`;
+
+  const headers = new Headers(req.headers);
+  headers.set("content-type", "application/json");
+
+  return fetch(targetUrl, {
+    method: "POST",
+    headers,
+    body: raw,
+  });
+}
 async function handleCronTrigger() {
   const store = getStore();
   const lockKey = "daemon:lock";
@@ -364,7 +400,7 @@ if (op === "workflow") {
   const body = await req.json().catch(() => null);
 
   // resume / dispatch WDK world callback here
-  return Response.json({ ok: true, op: "workflow", body });
+  return handleWorkflowCallback(req);
 }
   if (op === "pair") {
     await ensurePairingCode();
