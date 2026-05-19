@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { start } from "workflow/api";
-
+import { world } from "@/app/lib/workflow-world";
 import { sessionWorkflow } from "@/app/workflows/session";
 import { daemonWorkflow } from "@/app/workflows/daemon";
 
@@ -44,7 +44,7 @@ async function handleCronTrigger() {
   const acquired = await store.set(lockKey, String(Date.now()), { exSeconds: 70, nx: true });
 
   if (acquired) {
-    await start(daemonWorkflow, []);
+    await start(daemonWorkflow, [], { world });
     return jsonOk({ started: true, acquiredLock: true });
   }
 
@@ -127,7 +127,7 @@ async function maybeHandleChatPairingCommand(msg: InboundMessage): Promise<boole
 // Workflow routing
 // ============================================================
 async function routeToSession(msg: InboundMessage): Promise<void> {
-  await start(sessionWorkflow, [msg.sessionId, msg]);
+  await start(sessionWorkflow, [msg.sessionId, msg], { world });
 }
 
 // ============================================================
