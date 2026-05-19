@@ -231,7 +231,12 @@ export async function GET(req: Request) {
   const op = url.searchParams.get("op");
 
   if (op === "health") return jsonOk({ ts: Date.now() });
+if (op === "workflow") {
+  const body = await req.json().catch(() => null);
 
+  // resume / dispatch WDK world callback here
+  return Response.json({ ok: true, op: "workflow", body });
+}
   if (op === "cron") {
     return handleCronTrigger();
   }
@@ -355,7 +360,12 @@ export async function POST(req: Request) {
   if (op === "cron") {
     return handleCronTrigger();
   }
+if (op === "workflow") {
+  const body = await req.json().catch(() => null);
 
+  // resume / dispatch WDK world callback here
+  return Response.json({ ok: true, op: "workflow", body });
+}
   if (op === "pair") {
     await ensurePairingCode();
 
